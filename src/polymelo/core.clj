@@ -6,26 +6,31 @@
        (mapcat (partial repeat 12) (range))
        (cycle [:c :c+ :d :d+ :e :f :f+ :g :g+ :a :a+ :b])))
 
-(def base [[0 :c+] [0 :e] [0 :g+] [0 :d+]])
+;; nil is used to denote empty note
+(def base [[0 :c+] nil [0 :e] [0 :g+]])
 
 (def seq1 [0  0  0  0  7])
 
 (def seq2 [12 0  0])
 
 (defn note->semitone [note]
-  (-> (take-while (comp nil? #{note}) notes)
-      count
-      (+ 1)))
+  (when note
+    (-> (take-while (comp nil? #{note}) notes)
+        count
+        (+ 1))))
 
 (defn semitone->note [semitone]
-  (-> (take semitone notes)
-      last))
+  (when semitone
+    (-> (take semitone notes)
+        last)))
 
 (defn get-notes
   "List all the notes that will occour in a poymeter modulated melody"
   [base & mod-seqs]
   (let [total-steps (apply * (count base) (map count mod-seqs))]
-    (->> (apply (partial map +)
+    (->> (apply (partial map (fn [& mod-semitones]
+                               (when (every? identity mod-semitones)
+                                 (apply + mod-semitones))))
                 (map note->semitone (cycle base))
                 (map cycle mod-seqs))
          (take total-steps)
